@@ -1,0 +1,53 @@
+﻿@model List<NinjaManagerProg5.ViewModels.EquipmentVM>
+
+@{
+    ViewBag.Title = "Equipment Overview";
+}
+
+<div class="container mt-4">
+    @if (TempData["Message"] != null)
+    {
+        var message = TempData["Message"].ToString();
+        var alertClass = message.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0
+            ? "alert-danger"
+            : "alert-success";
+        <div class="alert @alertClass" id="error-message">
+            @TempData["Message"]
+        </div>
+    }
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Equipment Overview</h1>
+        <a asp-action="Upsert" asp-controller="Equipment" class="btn btn-secondary bg-gradient">Create Equipment</a>
+    </div>
+    <!-- Equipment table -->
+    <table class="table table-hover mt-4">
+        <thead>
+        <tr>
+            <th>Equipment Name</th>
+            <th>Category</th>
+            <th>Strength</th>
+            <th>Intelligence</th>
+            <th>Agility</th>
+            <th>Gold Value</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var equipmentVM in Model)
+        {
+            <tr onclick="window.location.href='@Url.Action("Upsert", "Equipment", new { id = equipmentVM.Equipment.Id })'" style="cursor:pointer;">
+                <td>@equipmentVM.Equipment.Name</td>
+                <td>@equipmentVM.Equipment.Category</td>
+                <td>@equipmentVM.Equipment.Strength</td>
+                <td>@equipmentVM.Equipment.Intelligence</td>
+                <td>@equipmentVM.Equipment.Agility</td>
+                <td>@equipmentVM.Equipment.GoldValue</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    @if (!Model.Any())
+    {
+        <p>There is no equipment to display.</p>
+    }
+</div>

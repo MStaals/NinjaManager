@@ -1,0 +1,128 @@
+﻿@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model List<NinjaManagerProg5.ViewModels.NinjaVM>
+
+@{
+ViewData["Title"] = "Ninja Manager";
+
+// Get the selected ninja ID from the query string
+var selectedNinjaId = Context.Request.Query["nid"].ToString();
+var selectedNinja = Model.FirstOrDefault(n => n.Ninja.Id.ToString() == selectedNinjaId);
+
+// Define all possible equipment slots
+var equipmentSlots = new List<string> { "Head", "Necklace", "Chest", "Hands", "Feet", "Ring" };
+
+// Calculate total stats and gear value
+var totalStrength = selectedNinja?.Equipments.Sum(e => e.Strength) ?? 0;
+var totalAgility = selectedNinja?.Equipments.Sum(e => e.Agility) ?? 0;
+var totalIntelligence = selectedNinja?.Equipments.Sum(e => e.Intelligence) ?? 0;
+var gearValue = selectedNinja?.Equipments.Sum(e => e.GoldValue) ?? 0;
+}
+
+<div class="container my-4">
+    <h2 class="text-center">Ninja Manager</h2>
+
+    <!-- Ninja Selection Dropdown -->
+    <form id="ninjaForm" method="get" class="mb-4">
+        <div class="d-flex justify-content-center">
+            <label for="ninjaSelect" class="me-2">Select Ninja:</label>
+            <select name="nid" class="form-select w-auto d-inline-block" onchange="this.form.submit()">
+                <option value="">-- Selecteer een ninja --</option>
+                @foreach (var ninja in (List<Ninja>)ViewBag.NinjaList)
+                {
+                    <option value="@ninja.Id"> @(ninja.Id.ToString() == selectedNinjaId ? "selected" : "")
+                    Naam: @ninja.Name
+                </option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (selectedNinja == null)
+    {
+    <div class="alert alert-warning text-center">Geen ninja geselecteerd.</div>
+    }
+    else
+    {
+    <div class="row mb-4">
+        <div class="col-md-6 offset-md-3">
+            <div class="card p-3">
+                <h5 class="card-title">Ninja Details</h5>
+                <p><strong>Ninja:</strong> @selectedNinja.Ninja.Name</p>
+                <p><strong>Gold in wallet:</strong> @selectedNinja.Ninja.Gold</p>
+                <p><strong>Total strength:</strong> @totalStrength</p>
+                <p><strong>Total agility:</strong> @totalAgility</p>
+                <p><strong>Total intelligence:</strong> @totalIntelligence</p>
+                <p><strong>Gear Value:</strong> @gearValue</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row equipment-layout mx-auto text-center" style="max-height: 300px; ">
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot head">@RenderEquipmentSlot("Head")</div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot necklace">@RenderEquipmentSlot("Necklace")</div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot chest">@RenderEquipmentSlot("Chest")</div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot hands">@RenderEquipmentSlot("Hand")</div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot feet">@RenderEquipmentSlot("Feet")</div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="equipment-slot ring">@RenderEquipmentSlot("Ring")</div>
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Helper to render equipment slot -->
+@functions {
+HtmlString RenderEquipmentSlot(string slotType)
+{
+var selectedNinjaId = Context.Request.Query["nid"].ToString();
+var selectedNinja = Model.FirstOrDefault(n => n.Ninja.Id.ToString() == selectedNinjaId);
+var equipment = selectedNinja?.Equipments.FirstOrDefault(e => e.Category == slotType);
+if (equipment != null)
+{
+return new HtmlString($@"
+                <div class='equipment-box'>
+                    <p><strong>{equipment.Name}</strong></p>
+                    <p>Strength: {equipment.Strength}</p>
+                    <p>Agility: {equipment.Agility}</p>
+                    <p>Intelligence: {equipment.Intelligence}</p>
+                </div>");
+}
+else
+{
+return new HtmlString($@"
+                <div class='equipment-box empty'>
+                    <p><strong>{slotType}</strong></p>
+                    <p>Geen item toegewezen</p>
+                </div>");
+}
+}
+}
+<!-- CSS Styling -->
+<style>
+    .equipment-layout {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .equipment-slot {
+        padding: 15px;
+        border: 2px solid #000;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        width: 100%;
+    }
+    .empty {
+        color: #999;
+    }
+</style>

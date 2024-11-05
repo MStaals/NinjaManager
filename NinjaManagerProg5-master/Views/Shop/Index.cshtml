@@ -1,0 +1,147 @@
+@model List<NinjaManagerProg5.ViewModels.EquipmentVM>
+
+@{
+    ViewData["Title"] = "Shop";
+    var categories = new List<string> { "Head", "Chest", "Hand", "Feet", "Ring", "Necklace" };
+
+    // Voorbeeld van hoe je ninjaEquipment opbouwt
+    var ninjaEquipment = new Dictionary<int, List<int>>();
+    foreach (var ninja in (List<Ninja>)ViewBag.NinjaList)
+    {
+        ninjaEquipment[ninja.Id] = ninja.NinjaEquipments.Select(ne => ne.EquipmentId).ToList();
+    }
+
+    // JSON data voor ninja's en hun items
+    var ninjaEquipmentJson = System.Text.Json.JsonSerializer.Serialize(ninjaEquipment);
+            
+}
+
+<div class="d-flex justify-content-center align-items-center">
+    <div class="m-2 container-xl text-center">
+        @if (TempData["Message"] != null)
+        {
+            var message = TempData["Message"].ToString();
+            var alertClass = message.IndexOf("gekocht", StringComparison.OrdinalIgnoreCase) >= 0 || 
+                             message.IndexOf("verkocht", StringComparison.OrdinalIgnoreCase) >= 0 
+                             ? "alert-success" 
+                             : "alert-danger";
+            <div class="alert @alertClass" id="error-message">
+                @TempData["Message"]
+            </div>
+        }
+        <h2>Shop</h2>
+        <form method="post" asp-action="Buy" asp-controller="Shop" id="ninjaSelectionForm">
+            <div class="d-flex align-items-center mb-3">
+                <h4 class="me-3">Kies een ninja:</h4>
+                <select name="nid" class="form-select w-auto me-4" onchange="toggleBuyButtons(this)">
+                    <option value="">-- Selecteer een ninja --</option>
+                    @foreach (var ninja in (List<Ninja>)ViewBag.NinjaList)
+                    {
+                        <option value="@ninja.Id">Naam: @ninja.Name Gold: @ninja.Gold </option>
+                    }
+                </select>
+                <h4 class="me-3">Filter op categorie:</h4>
+                <select id="categoryFilter" class="form-select w-auto" onchange="filterByCategory()">
+                    <option value="">-- Selecteer een categorie --</option>
+                    @foreach (var category in categories)
+                    { 
+                        <option value="@category">@category</option>
+                    }
+                    </select>
+            </div>
+
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th>Categorie</th>
+                    <th>Prijs (in goud)</th>
+                    <th>Strength</th>
+                    <th>Intelligence</th>
+                    <th>Agility</th>
+                    <th style="width: 1%;">Actie</th>
+                </tr>
+                </thead>
+                <tbody id="equipmentTable">
+                @if (Model.Count == 0)
+                {
+                <tr>
+                    <td colspan="7">Geen equipment gevonden.</td>
+                </tr>
+                }
+                else
+                {
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                <tr data-category="@Model[i].Equipment.Category">
+                    <td>@Model[i].Equipment.Name</td>
+                    <td>@Model[i].Equipment.Category</td>
+                    <td>@Model[i].Equipment.GoldValue</td>
+                    <td>@Model[i].Equipment.Strength</td>
+                    <td>@Model[i].Equipment.Intelligence</td>
+                    <td>@Model[i].Equipment.Agility</td>
+                    <td class="d-inline" style="width: 1%; white-space: nowrap;">
+                        <button type="submit" class="btn btn-primary buy-button" name="eid" value="@Model[i].Equipment.Id" disabled>Kopen</button>
+                        <button type="button" class="btn btn-danger sell-button" name="eid" value="@Model[i].Equipment.Id" disabled onclick="sellEquipment(this)">Verkopen</button>
+                    </td>
+                </tr>
+                }
+                }
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+
+<script>
+    // JSON data voor ninja's en hun items
+    const ninjaEquipment = @Html.Raw(ninjaEquipmentJson);
+
+    function toggleBuyButtons(selectElement) {
+        const selectedNinjaId = selectElement.value;
+        const buyButtons = document.querySelectorAll('.buy-button');
+        const sellButtons = document.querySelectorAll('.sell-button');
+
+        buyButtons.forEach(button => {
+            const equipmentId = button.value;
+            // Activeer de koopknop als de ninja het item nog niet heeft
+            button.disabled = !selectedNinjaId || ninjaEquipment[selectedNinjaId].includes(parseInt(equipmentId));
+        });
+
+        sellButtons.forEach(button => {
+            const equipmentId = button.value;
+            // Activeer de verkoopknop als de ninja het item al heeft
+            button.disabled = !selectedNinjaId || !ninjaEquipment[selectedNinjaId].includes(parseInt(equipmentId));
+        });
+    }
+
+    function filterByCategory() {
+        const selectedCategory = document.getElementById('categoryFilter').value;
+        const rows = document.querySelectorAll('#equipmentTable tr');
+
+        rows.forEach(row => {
+            const rowCategory = row.getAttribute('data-category');
+            if (selectedCategory === '' || rowCategory === selectedCategory) {
+                row.style.display = ''; // Toon de rij
+            } else {
+                row.style.display = 'none'; // Verberg de rij
+            }
+        });
+    }
+
+    function sellEquipment(button) {
+        const selectedNinjaId = document.querySelector('select[name="nid"]').value; // Haal de geselecteerde ninja ID op
+        const equipmentId = button.value; // Haal de equipment ID op
+        if (!selectedNinjaId) {
+            alert("Selecteer een ninja om de uitrusting te verkopen.");
+            return; 
+        }
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '@Url.Action("Sell", "Shop")';
+        form.innerHTML = `<input type="hidden" name="nid" value="${selectedNinjaId}" />
+                      <input type="hidden" name="eid" value="${equipmentId}" />`;
+        document.body.appendChild(form);
+        form.submit(); 
+    }
+</script>
